@@ -16,7 +16,7 @@ st.set_page_config(page_title="🩺 Lung Cancer Detection using CNN", layout="wi
 # Load TFLite model
 @st.cache_resource
 def load_tflite_model():
-    interpreter = tflite.Interpreter(model_path="lung_cancer_classifier.tflite")
+    interpreter = tflite.Interpreter(model_path="lung_cancer_classifier_optimized.tflite")
     interpreter.allocate_tensors()
     return interpreter
 
