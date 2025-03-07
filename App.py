@@ -1,20 +1,27 @@
 import streamlit as st
 import numpy as np
 import tensorflow as tf
+import tensorflow.lite as tflite
 from tensorflow import keras
 from PIL import Image
 import pandas as pd
 
+
+
+
+
 # Set page configuration
 st.set_page_config(page_title="🩺 Lung Cancer Detection using CNN", layout="wide")
 
-# Load the trained model
+# Load TFLite model
 @st.cache_resource
-def load_model():
-    model = keras.models.load_model("/Users/bandi/Downloads/Data Resources/lung_colon_image_set/lung_cancer_classifier.keras")
-    return model
+def load_tflite_model():
+    interpreter = tflite.Interpreter(model_path="lung_cancer_classifier.tflite")
+    interpreter.allocate_tensors()
+    return interpreter
 
-model = load_model()
+interpreter = load_tflite_model()
+model = load_tflite_model()
 
 # Define class labels
 class_labels = ['Normal', 'Adenocarcinoma', 'Squamous Cell Carcinoma']
