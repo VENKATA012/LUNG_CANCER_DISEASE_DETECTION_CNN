@@ -11,7 +11,7 @@ st.set_page_config(page_title="🩺 Lung Cancer Detection using CNN", layout="wi
 # Load the trained model
 @st.cache_resource
 def load_model():
-    model = keras.models.load_model("lung_cancer_classifier.keras")
+    model = keras.models.load_model("lung_cancer_classifier_optimized.tflite")
     return model
 
 model = load_model()
