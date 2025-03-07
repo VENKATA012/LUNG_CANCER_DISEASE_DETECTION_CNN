@@ -1,7 +1,7 @@
 streamlit
 numpy
 opencv-python
-tensorfl
+tensorflow
 pandas
 PIL
 cv2
