@@ -9,38 +9,26 @@ import datetime
 # Set page configuration
 st.set_page_config(page_title="🩺 Lung Cancer Detection using CNN", layout="wide")
 
-# Define a wrapper class for the TFLite model
-class TFLiteModel:
-    def __init__(self, model_path):
-        self.interpreter = tflite.Interpreter(model_path=model_path)
-        self.interpreter.allocate_tensors()
-        self.input_details = self.interpreter.get_input_details()
-        self.output_details = self.interpreter.get_output_details()
-
-    def predict(self, image_array):
-        """Mimic the .predict() method of a Keras model."""
-        self.interpreter.set_tensor(self.input_details[0]['index'], image_array)
-        self.interpreter.invoke()
-        prediction = self.interpreter.get_tensor(self.output_details[0]['index'])
-        return prediction
-
-# Load the TFLite model
+# Load TFLite model
 @st.cache_resource
-def load_model():
-    return TFLiteModel("lung_cancer_classifier_optimized.tflite")
+def load_tflite_model():
+    interpreter = tflite.Interpreter(model_path="lung_cancer_classifier_optimized.tflite")
+    interpreter.allocate_tensors()
+    return interpreter
 
-# Use `model` instead of `interpreter`
-model = load_model()
+interpreter = load_tflite_model()
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
 
 # Define class labels
 class_labels = ['Normal', 'Adenocarcinoma', 'Squamous Cell Carcinoma']
 
 # Function to preprocess the uploaded image
 def preprocess_image(image):
-    image = image.resize((256, 256))  # Resize using PIL
-    img_array = np.array(image).astype(np.float32) / 255.0  # Normalize pixel values
-    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
-    return img_array
+    img = image.resize((256, 256))  # Resize using PIL
+    img = np.array(img).astype(np.float32) / 255.0  # Normalize
+    img = np.expand_dims(img, axis=0)  # Add batch dimension
+    return img
 
 # **🔹 Database Setup for History**
 conn = sqlite3.connect("predictions.db", check_same_thread=False)
@@ -69,18 +57,18 @@ def fetch_prediction_history():
     try:
         cursor.execute("SELECT image_name, predicted_class, confidence, timestamp FROM history ORDER BY timestamp DESC")
         rows = cursor.fetchall()
-        
+
         # Convert to Pandas DataFrame
         df = pd.DataFrame(rows, columns=["🖼 Image", "🔬 Predicted Class", "📊 Confidence (%)", "⏳ Timestamp"])
         
-        # Ensure text columns are properly decoded to avoid UnicodeDecodeError
-        df["🖼 Image"] = df["🖼 Image"].astype(str).apply(lambda x: x.encode('utf-8', 'ignore').decode('utf-8'))
-        df["🔬 Predicted Class"] = df["🔬 Predicted Class"].astype(str).apply(lambda x: x.encode('utf-8', 'ignore').decode('utf-8'))
+        # Ensure text columns are properly decoded
+        df["🖼 Image"] = df["🖼 Image"].astype(str)
+        df["🔬 Predicted Class"] = df["🔬 Predicted Class"].astype(str)
         df["⏳ Timestamp"] = df["⏳ Timestamp"].astype(str)
         
         return df
     except Exception as e:
-        st.error(f"Error loading prediction history: {e}")
+        st.error(f"⚠️ Error loading prediction history: {e}")
         return pd.DataFrame()
 
 # Sidebar Navigation
@@ -125,7 +113,7 @@ elif page == "🔬 Lung Detection":
         
         predicted_class_index = np.argmax(prediction)
         predicted_label = class_labels[predicted_class_index]
-        confidence = prediction[0][predicted_class_index] * 100
+        confidence = float(prediction[0][predicted_class_index]) * 100  # Convert to float
 
         st.markdown(f"### 🔍 Prediction: *{predicted_label}*")
         st.write("### 📊 Class Probabilities:")
@@ -138,23 +126,16 @@ elif page == "🔬 Lung Detection":
         save_prediction(uploaded_file.name, predicted_label, confidence)
 
 # History Page
-# History Page
-# History Page
 elif page == "📊 History":
     st.title("📊 Prediction History")
 
     try:
-        cursor.execute("SELECT image_name, predicted_class, confidence, timestamp FROM history ORDER BY timestamp DESC")
-        rows = cursor.fetchall()
+        df = fetch_prediction_history()
 
-        if rows:
-            df = pd.DataFrame(rows, columns=["🖼 Image", "🔬 Predicted Class", "📊 Confidence (%)", "⏳ Timestamp"])
-
+        if not df.empty:
             # Convert confidence values safely
             def safe_convert(value):
                 try:
-                    if isinstance(value, bytes):
-                        return float.fromhex(value.hex())  # Convert binary to float
                     return float(value) if isinstance(value, (int, float, str)) else "Invalid"
                 except Exception:
                     return "Error"
@@ -168,8 +149,6 @@ elif page == "📊 History":
 
     except Exception as e:
         st.error(f"⚠️ Error loading prediction history: {e}")
-
-
 
 # Help Page
 elif page == "❓ Help":
