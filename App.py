@@ -5,32 +5,42 @@ from PIL import Image
 import sqlite3
 import pandas as pd
 import datetime
-import cv2
 
 # Set page configuration
 st.set_page_config(page_title="🩺 Lung Cancer Detection using CNN", layout="wide")
 
-# Load TFLite model
-@st.cache_resource
-def load_tflite_model():
-    interpreter = tflite.Interpreter(model_path="lung_cancer_classifier_optimized.tflite")
-    interpreter.allocate_tensors()
-    return interpreter
+# Define a wrapper class for the TFLite model
+class TFLiteModel:
+    def __init__(self, model_path):
+        self.interpreter = tflite.Interpreter(model_path=model_path)
+        self.interpreter.allocate_tensors()
+        self.input_details = self.interpreter.get_input_details()
+        self.output_details = self.interpreter.get_output_details()
 
-interpreter = load_tflite_model()
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
+    def predict(self, image_array):
+        """Mimic the .predict() method of a Keras model."""
+        self.interpreter.set_tensor(self.input_details[0]['index'], image_array)
+        self.interpreter.invoke()
+        prediction = self.interpreter.get_tensor(self.output_details[0]['index'])
+        return prediction
+
+# Load the TFLite model
+@st.cache_resource
+def load_model():
+    return TFLiteModel("lung_cancer_classifier_optimized.tflite")
+
+# Use `model` instead of `interpreter`
+model = load_model()
 
 # Define class labels
 class_labels = ['Normal', 'Adenocarcinoma', 'Squamous Cell Carcinoma']
 
 # Function to preprocess the uploaded image
 def preprocess_image(image):
-    img = np.array(image)
-    img = cv2.resize(img, (256, 256))  # Resize to match model input size
-    img = img.astype(np.float32) / 255.0  # Normalize pixel values
-    img = np.expand_dims(img, axis=0)  # Add batch dimension
-    return img
+    image = image.resize((256, 256))  # Resize using PIL
+    img_array = np.array(image).astype(np.float32) / 255.0  # Normalize pixel values
+    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+    return img_array
 
 # **🔹 Database Setup for History**
 conn = sqlite3.connect("predictions.db", check_same_thread=False)
