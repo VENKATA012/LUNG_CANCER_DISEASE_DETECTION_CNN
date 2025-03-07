@@ -4,3 +4,4 @@ opencv-python
 tensorflow
 pandas
 pillow
+opencv-python-headless
