@@ -3,5 +3,3 @@ numpy
 opencv-python
 tensorflow
 pandas
-PIL
-cv2
