@@ -78,7 +78,7 @@ page = st.sidebar.radio("Go to", ["🏠 Home", "📖 About", "🔬 Lung Detectio
 
 # Home Page
 if page == "🏠 Home":
-     st.title("🏠 Welcome to Lung Cancer Detection System")
+    st.title("🏠 Welcome to Lung Cancer Detection System")
     st.image("digital-lung-anatomy-visualization-ai-generated-detailed-visualization-human-lungs-illuminated-vibrant-blue-orange-326767653.webp", use_column_width=True)
     st.write("Detect lung diseases using AI-powered deep learning models.")
     
